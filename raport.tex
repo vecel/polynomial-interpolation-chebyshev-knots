@@ -1,0 +1,431 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\geometry{a4paper, margin=1in}
+
+\title{Zbieżność procesu interpolacji - Raport}
+\author{Mateusz Karandys}
+\date{18 listopada 2023}
+
+\renewcommand{\figurename}{Wykres}
+\renewcommand{\tablename}{Zestawienie}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section*{1. Wprowadzenie}
+	
+	Rozważmy następujący problem. Mamy dane:
+	\begin{enumerate}
+		\item $x_i \in \mathbb{R}$ dla $i = 0, 1, \ldots, n$ zwane węzłami interpolacji
+		\item $y_i = f(x_i)$ gdzie $f$ jest funkcją interpolowaną (przybliżaną)
+	\end{enumerate}
+	Chcemy znaleźć funkcję $p$, zwaną funkcją interpolującą, spełniającą zależność
+	\begin{equation}
+	p(x_i) = y_i \quad \text{dla} \quad i = 0, 1, \dots, n
+	\end{equation}
+	
+	\subsection*{1.1. Zastosowana metoda}
+	
+	Zajmiemy się przypadkiem, w którym funkcja $p$ jest wielomianem. Skorzystamy z następującego faktu.\\\\
+	\textbf{Fakt.}
+	\textit{Dla $n+1$ parami różnych węzłów $x_0, \ldots, x_n$ istnieje dokładnie jeden wielomian stopnia co najwyżej $n$ spełniający zależność $(1)$}.\\\\
+	Wykorzystamy postać Lagrange'a tego wielomianu.
+
+	\subsection*{1.2. Wielomian interpolacyjny Lagrange'a}
+	
+	Wielomian $p$ zapiszemy jako 
+	\[
+		p(x) = \sum_{i=0}^n y_il_i(x) \quad \text{gdzie} \quad l_i(x) = \prod_{j=0, j \ne i}^n \frac{x-x_j}{x_i-x_j}
+	\]
+	Można łatwo sprawdzić, że tak określony wielomian spełnia warunek $(1)$.
+	
+	\subsection*{1.3. Wybór węzłów}
+	
+	Załóżmy, że będziemy przybliżać funkcję $f$ na przedziale $[a, b]$.
+	Licząc błąd tego przybliżenia możemy skorzystać z oszacowania:
+	\begin{equation}
+		|f(x) - p(x)| \leq \frac{M_{n+1}}{(n + 1)!} \left|(x - x_0)(x - x_1) \ldots (x - x_n)\right|, 
+	\end{equation}
+	gdzie $f \in C^{n+1}([a, b])$, $p$ jest wielomianem interpolacyjnym funkcji $f$ opartym na parami różnych węzłach $x_0, \ldots, x_n \in [a, b]$, a $M_{n+1} = \max_{x \in [a, b]} |f^{(n+1)}(x)|$.\\\\
+	W procesie badania zbieżności interpolacji wykorzystamy węzły Czebyszewa, czyli pierwiastki wielomianu $T_{n+1}(x)$, gdzie $T_i(x)$ jest określony rekurencyjnie:
+
+	\begin{equation*}
+	\left\lbrace
+	\begin{aligned}
+		& T_0(x) = 1 \\
+		& T_1(x) = x \\
+		& T_i(x) = 2xT_{i-1}(x)-T_{i-2}(x) \quad \text{dla} \quad i = 2, 3, \ldots
+	\end{aligned}
+	\right.
+	\end{equation*}
+	dla $x \in [-1, 1]$.\\\\
+	Pierwiastki $T_{n+1}(x)$ z powyższego przedziału przeskalujemy liniowo na przedział $[a, b]$. Przy takim układzie węzłów wyrażenie $\max_{x \in [a, b]} |(x-x_0)(x-x_1)\ldots(x-x_n)|$ przyjmuje najmniejszą wartość i daje następujące oszacowanie błędu interpolacji:
+	\begin{equation}
+		|f(x) - p(x)| \leq \frac{M_{n+1}}{2^n (n + 1)!}
+	\end{equation}
+	
+	\section*{2. Implementacja}
+	
+	Implementację przeprowadziliśmy w środowisku MATLAB. Zaimplementowaliśmy funkcję wyznaczającą wartości wielomianu w postaci Lagrange'a, zbadaliśmy zbieżność procesu interpolacji do wybranych funkcji matematycznych oraz porównaliśmy naszą funkcję z wbudowaną funkcją $interp1$ z parametrem $method=\textquotesingle spline \textquotesingle$.
+	
+	\subsection*{2.1. Budowa skryptu}
+	
+	Na główną część skryptu składają się funkcje użytkowe:
+	\begin{enumerate}
+		\item \textit{wielomianInterpolacyjny(wezly\_x, wezly\_y, x)} - wyznacza wartości wielomianu interpolacyjnego (w punktach $x$) dla węzłów o zadanych współrzędnych,
+		\item \textit{wezlyCzebyszewa(n, a, b)} - wyznacza miejsca zerowe		wielomianu Czebyszewa stopnia $n$ przeskalowane na przedział $[a, b]$,
+	\end{enumerate}
+	funkcje wizualizacyjne:
+	\begin{enumerate}
+		\item \textit{wizualizacjaZbieznosci(f, a, b, n)} - tworzy animację porównującą na przedziale $[a, b]$
+		wykres funkcji $f$ z wielomianami interpolującymi wyznaczonymi na zadanych
+		liczbach węzłów Czebyszewa,
+		\item \textit{porownajFunkcje(f, x, n, a, b)} - tworzy zestawienie porównujące wyniki przybliżania funkcji $f$ na przedziale $[a, b]$  wbudowaną funkcją $interp1$ z funkcją $wielomianInterpolacyjny$ opartymi na $n$ węzłach,
+	\end{enumerate}
+	oraz skrypt testujacy i aplikacja do potwierdzenia poprawności implementacji
+	\begin{enumerate}
+		\item \textit{potwierdzeniePoprawnosci}
+		\item \textit{app} - uruchamia okienko, w którym użytkownik może zwizualizować wielomian interpolacyjny wyliczony przez naszą funkcję oparty o podane węzły
+	\end{enumerate}
+
+	\subsection*{2.2. Obsługa skryptu}
+	Wybrane przykłady znajdują się w skrypcie $main.m$. Aby uruchomić wizualizację należy odkomentować linijki danego przykładu (animacje potrzebują czasu na wykonanie dlatego najlepiej uruchamiać jeden przykład na raz). Na ekranie pojawi się okienko z animacją danego przykładu, a w konsoli pojawi się zestawienie porównujące wynik zaimplementowanej funkcji z funkcją wbudowaną.\\\\
+	\textbf{Animacja własnych przykładów.}
+	Można wprowadzić własne przykłady. W tym celu należy zdefiniować funkcję interpolowaną $f$ (lub użyć wbudowanej funkcji matematycznej), określić przedział $[a, b]$ interpolacji oraz wybrać liczbę węzłów $n$ (może być ona wektorem, wtedy na wykresie będą wyświetlane przybliżenia dla kolejnych liczb węzłów) a następnie wywołać funkcję $wizualizacjaZbieznosci(f, a, b, n)$. Dodatkowo jako piąty argument można podać napis $fTekst$, który wyświetli się w tytule wykresu.\\\\
+	\textbf{Zestawienie porównujące.}
+	Aby porównać wynik aproksymacji funkcji $f$ wielomianem w postaci Lagrange'a z wbudowaną funkcją należy wywołać funkcję $porownajFunkcje(f, x, n, a, b)$, której argumentami są: $f$ - funkcja interpolowana, $x$ - wektor argumentów dla których tworzone będzie zestawienie, $n$ - wektor kolejnych liczb węzłów, $a, b$ - początek i koniec przedziału, na którym wyznaczone zostaną węzły. W szczególności argumenty $x$ mogą znajdować się poza przedziałem $[a, b]$.\\\\
+	\textbf{Wizualizacja wielomianu interpolacyjnego.}
+	Aplikacja \textit{app.mlapp} pozwala sprawdzić, jak wygląda wielomian interpolacyjny na zadanych węzłach. Użytkownik wpisuje w odpowiednio oznaczone okienka współrzędne węzłów, na których oparty będzie wielomian. Następnie po wciśnięciu przycisku \textit{Zastosuj} w obszerze wykresu wyświetli się wykres odpowiedniej funkcji. Aby dostosować widok, można zaznaczyć, czy węzły mają być wyświetlane oraz, używając sliderów, można dostosować zakresy osi.
+	
+	\section*{3. Przykłady}
+	Poniżej znajduje się kilka ciekawych wyników i przykładów badania procesu interpolacji wybrancyh funkcji matematycznych.
+	\clearpage
+	\begin{figure}
+		\centering
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/exp5.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/exp7.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/exp15.jpg}
+		\end{subfigure}
+		\caption{Na przedziale $[-5, 5]$ wystarczy 15 węzłów, aby dobrze przybliżyć $e^x$ wielomianem.}
+	\end{figure}
+
+	\begin{figure}
+		\centering
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/abs9.jpg}
+		\end{subfigure}
+	\hfill
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/abs17.jpg}
+		\end{subfigure}
+	\hfill
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/abs25.jpg}
+		\end{subfigure}
+	\hfill
+		\begin{subfigure}{0.45\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/abs100.png}
+		\end{subfigure}
+	\caption{Funkcja $|x|$ jest nieróżniczkowalna w punkcie $x=0$ wobec czego nie możemy skorzystać z przedstawionego oszacowania błędu. Jak widać, błąd przybliżenia jest duży nawet dla dużej liczby węzłów.}
+	\end{figure}
+
+	\begin{figure}
+		\centering
+		\begin{subfigure}{\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/przykl3_krotszy.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/przykl3_dluzszy.png}
+		\end{subfigure}
+		\caption{Funkcję $\frac{1}{x^2+1}$ da się dobrze przybliżyć wielomianem. Na dłuższym przedziale $[-5, 5]$ nie wystarczy jednak 20 węzłów, aby dobrze to zrobić.}
+	\end{figure}
+	
+	\begin{figure}
+		\centering
+		\begin{subfigure}{\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sin_dluzszy_okres.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sin_krotszy_okres.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sin_krotszy_okres_2.png}
+		\end{subfigure}
+		\caption{Interpolując funkcje okresowe na ustalonym przedziale potrzeba więcej węzłów, aby przybliżyć funkcję o mniejszym okresie.}
+	\end{figure}
+
+	\begin{figure}
+		\centering
+		\begin{subfigure}{0.9\textwidth}
+			\centering					
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sin_odw_20.png}			
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{0.9\textwidth}
+			\centering					
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sin_odw_80.png}			
+		\end{subfigure}
+		\hfill
+			\begin{subfigure}{0.9\textwidth}
+			\centering					
+			\includegraphics[width=\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sin_odw_120.png}
+		\end{subfigure}
+		\caption{Przedstawiona funkcja bardzo oscyluje w pobliżu punktu $x=0$ (w którym jest też nieokreślona), dlatego przybliżenie jest bardzo niedokładne.}
+	\end{figure}
+
+	\begin{figure}
+		\centering
+		\begin{subfigure}{0.8\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sqrt_1.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}{0.8\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{/home/mateusz/Mini/mntmp/wykresy/sqrt_2.png}
+		\end{subfigure}
+		\caption{Wydaje się, że przybliżenie jest dokładne, ale błąd jest całkiem spory. Największe różnice powstają blisko punktu $x=0$, gdzie funkcja $\sqrt{x}$ jest nieróżniczkowalna, a jej wykres robi się bardzo "stromy".}
+	\end{figure}
+\clearpage
+
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+		\begin{tabular}{|c|c|c|c|c|c|c|c|}
+			\hline
+			Liczba węzłów & $\|f(x) - impl(x)\|_1$ & $\|f(x) - wbud(x)\|_1$ & $\|f(x) - impl(x)\|_2$ & $\|f(x) - wbud(x)\|_2$ & $\|f(x) - impl(x)\|_{\infty}$ & $\|f(x) - wbud(x)\|_{\infty}$ \\
+			\hline
+			2 & 15138 & 15138 & 715.52 & 715.52 & 107 & 107 \\
+			3 & 10829 & 10829 & 444.42 & 444.42 & 54.257 & 54.257 \\
+			4 & 5729.7 & 5729.7 & 227.33 & 227.33 & 23.44 & 23.44 \\
+			5 & 2506.4 & 2506.4 & 96.711 & 109.84 & 8.9081 & 10.301 \\
+			6 & 940.52 & 1131.2 & 35.541 & 54.241 & 3.0075 & 4.6364 \\
+			7 & 309.05 & 470.07 & 11.504 & 25.318 & 0.90999 & 2.1285 \\
+			8 & 90.259 & 184.62 & 3.3229 & 11.482 & 0.24878 & 1.1171 \\
+			9 & 23.709 & 75.297 & 0.86568 & 5.285 & 0.061912 & 0.58849 \\
+			10 & 5.6554 & 37.103 & 0.2052 & 2.5741 & 0.01412 & 0.31207 \\
+			11 & 1.235 & 21.011 & 0.044594 & 1.3692 & 0.0029691 & 0.16881 \\
+			12 & 0.24862 & 13.088 & 0.008942 & 0.80627 & 0.00057869 & 0.093757 \\
+			13 & 0.046409 & 8.7318 & 0.0016639 & 0.52103 & 0.00010504 & 0.053546 \\
+			14 & 0.0080724 & 6.1295 & 0.00028871 & 0.36151 & 1.7835e-05 & 0.038957 \\
+			15 & 0.0013148 & 4.4754 & 4.6919e-05 & 0.2636 & 2.8433e-06 & 0.030401 \\
+			16 & 0.00020126 & 3.3676 & 7.1693e-06 & 0.19895 & 4.2708e-07 & 0.023248 \\
+			17 & 2.9051e-05 & 2.5949 & 1.0335e-06 & 0.15395 & 6.0632e-08 & 0.017552 \\
+			18 & 3.9682e-06 & 2.0392 & 1.4101e-07 & 0.12142 & 8.1585e-09 & 0.013199 \\
+			19 & 5.1448e-07 & 1.6289 & 1.8257e-08 & 0.097247 & 1.0433e-09 & 0.01085 \\
+			20 & 6.3441e-08 & 1.3188 & 2.2491e-09 & 0.078898 & 1.271e-10 & 0.0087949 \\
+			\hline
+		\end{tabular}
+		}
+		\caption{Porównanie procesu zbieżności funkcji wbudowanej \textit{interp1} z zaimplementowaną dla funkcji $e^x$ na $[-5, 5]$.}
+		\label{tab:summary}
+	\end{table}
+
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				Liczba węzłów & $\|f(x) - \text{impl}(x)\|_1$ & $\|f(x) - \text{wbud}(x)\|_1$ & $\|f(x) - \text{impl}(x)\|_2$ & $\|f(x) - \text{wbud}(x)\|_2$ & $\|f(x) - \text{impl}(x)\|_{\infty}$ & $\|f(x) - \text{wbud}(x)\|_{\infty}$ \\
+				\hline
+				100 & 0.60798 & 0.61461 & 0.10402 & 0.11556 & 0.045123 & 0.048732 \\
+				200 & 0.15269 & 0.1537  & 0.036348 & 0.040456 & 0.020238 & 0.022018 \\
+				300 & 0.067017 & 0.067229 & 0.019399 & 0.02165 & 0.012026 & 0.013179 \\
+				\hline
+			\end{tabular}
+		}
+		\caption{Dla funkcji $|x|$ na $[-5, 5]$. Funkcja ta jest nieróżniczkowalna w $x=0$, interpolacja nie jest zbieżna.}
+	\end{table}
+	
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				Liczba węzłów & $\|f(x) - \text{impl}(x)\|_1$ & $\|f(x) - \text{wbud}(x)\|_1$ & $\|f(x) - \text{impl}(x)\|_2$ & $\|f(x) - \text{wbud}(x)\|_2$ & $\|f(x) - \text{impl}(x)\|_{\infty}$ & $\|f(x) - \text{wbud}(x)\|_{\infty}$ \\
+				\hline
+				2 & 169.42 & 169.42 & 6.3193 & 6.3193 & 0.33333 & 0.33333 \\
+				3 & 33.079 & 33.079 & 1.2326 & 1.2326 & 0.071429 & 0.071429 \\
+				4 & 29.265 & 29.265 & 1.0551 & 1.0551 & 0.058823 & 0.058823 \\
+				5 & 5.4631 & 1.3056 & 0.20498 & 0.056693 & 0.012195 & 0.0043219 \\
+				6 & 5.0366 & 4.2716 & 0.18084 & 0.16228 & 0.010101 & 0.011183 \\
+				7 & 0.93022 & 0.8832 & 0.035234 & 0.032071 & 0.0020921 & 0.0016525 \\
+				8 & 0.8652 & 0.66081 & 0.031042 & 0.03345 & 0.001733 & 0.003107 \\
+				9 & 0.15919 & 0.27608 & 0.0060556 & 0.012271 & 0.00035894 & 0.000831 \\
+				10 & 0.14853 & 0.17557 & 0.0053274 & 0.010302 & 0.00029734 & 0.0011431 \\
+				11 & 0.027275 & 0.11314 & 0.0010399 & 0.0055129 & 6.1584e-05 & 0.00043237 \\
+				12 & 0.025492 & 0.06138 & 0.00091418 & 0.0039257 & 5.1014e-05 & 0.00048498 \\
+				13 & 0.0046775 & 0.049224 & 0.00017853 & 0.002566 & 1.0566e-05 & 0.00023196 \\
+				14 & 0.0043746 & 0.031194 & 0.00015686 & 0.0018329 & 8.7524e-06 & 0.00023508 \\
+				15 & 0.00080218 & 0.02326 & 3.0643e-05 & 0.0013181 & 1.8129e-06 & 0.00013196 \\
+				16 & 0.00075073 & 0.0175 & 2.6916e-05 & 0.0009809 & 1.5016e-06 & 0.00012677 \\
+				17 & 0.00013757 & 0.012692 & 5.259e-06 & 0.0007439 & 3.1104e-07 & 7.9565e-05 \\
+				18 & 0.00012879 & 0.010203 & 4.6183e-06 & 0.00057565 & 2.5763e-07 & 7.4348e-05 \\
+				19 & 2.3605e-05 & 0.0079073 & 9.025e-07 & 0.00045277 & 5.3366e-08 & 5.0516e-05 \\
+				20 & 2.2104e-05 & 0.0062353 & 7.9241e-07 & 0.00036139 & 4.4201e-08 & 4.6557e-05 \\
+			\hline
+		\end{tabular}}
+		\caption{Dla funkcji $\frac{1}{x^2+1}$ na $[-1, 1]$.}
+	\end{table}
+	
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				Liczba węzłów & $\|f(x) - \text{impl}(x)\|_1$ & $\|f(x) - \text{wbud}(x)\|_1$ & $\|f(x) - \text{impl}(x)\|_2$ & $\|f(x) - \text{wbud}(x)\|_2$ & $\|f(x) - \text{impl}(x)\|_{\infty}$ & $\|f(x) - \text{wbud}(x)\|_{\infty}$ \\
+				\hline
+				10 & 593.55 & 329.86 & 22.234 & 13.023 & 1.2505 & 0.81682 \\
+				20 & 0.24247 & 17.243 & 0.0095251 & 0.85158 & 0.00063577 & 0.077124 \\
+				30 & 2.5441e-07 & 2.2086 & 1.017e-08 & 0.10936 & 7.3625e-10 & 0.011174 \\
+				40 & 3.104e-13 & 0.58526 & 1.3103e-14 & 0.028935 & 2.1094e-15 & 0.0027231 \\
+				50 & 3.9673e-13 & 0.21784 & 1.6699e-14 & 0.010853 & 2.4425e-15 & 0.0011412 \\
+				60 & 4.0821e-13 & 0.10005 & 1.7005e-14 & 0.004982 & 2.4425e-15 & 0.00051342 \\
+				70 & 4.0957e-13 & 0.052628 & 1.7757e-14 & 0.0026088 & 2.8866e-15 & 0.00027214 \\
+				80 & 4.173e-13 & 0.030174 & 1.7956e-14 & 0.001499 & 2.6645e-15 & 0.00015879 \\
+				90 & 4.6075e-13 & 0.018495 & 2.056e-14 & 0.00092303 & 2.5535e-15 & 9.5618e-05 \\
+				100 & 5.0621e-13 & 0.012 & 2.1728e-14 & 0.00059962 & 2.9976e-15 & 6.3673e-05 \\
+				110 & 5.7133e-13 & 0.0081385 & 2.5273e-14 & 0.00040654 & 3.2196e-15 & 4.2784e-05 \\
+				120 & 5.9522e-13 & 0.0057111 & 2.6448e-14 & 0.00028544 & 3.5527e-15 & 3.0086e-05 \\
+				130 & 6.233e-13 & 0.0041296 & 2.6908e-14 & 0.00020633 & 3.4417e-15 & 2.1865e-05 \\
+				140 & 5.8253e-13 & 0.0030552 & 2.5371e-14 & 0.00015286 & 3.7748e-15 & 1.5997e-05 \\
+				150 & 5.6585e-13 & 0.0023092 & 2.5037e-14 & 0.00011567 & 3.8858e-15 & 1.2306e-05 \\
+				\hline
+		\end{tabular}}
+		\caption{Dla funkcji $sin(x)$ na $[-4\pi, 4\pi]$.}
+	\end{table}
+	
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				Liczba węzłów & $\|f(x) - \text{impl}(x)\|_1$ & $\|f(x) - \text{wbud}(x)\|_1$ & $\|f(x) - \text{impl}(x)\|_2$ & $\|f(x) - \text{wbud}(x)\|_2$ & $\|f(x) - \text{impl}(x)\|_{\infty}$ & $\|f(x) - \text{wbud}(x)\|_{\infty}$ \\
+				\hline
+				10 & 801.92 & 794.7 & 31.381 & 31.049 & 2.3824 & 2.1063 \\
+				20 & 756.53 & 751.81 & 29.145 & 28.915 & 2.096 & 2.0233 \\
+				30 & 780.09 & 774.08 & 30.908 & 30.881 & 2.2138 & 2.3319 \\
+				40 & 766.19 & 730.94 & 31.225 & 28.929 & 2.5689 & 1.9929 \\
+				50 & 778.88 & 744.44 & 31.186 & 30.576 & 2.0677 & 2.0007 \\
+				60 & 733.09 & 719.49 & 29.367 & 29.004 & 2.0367 & 1.9996 \\
+				70 & 707.71 & 655.48 & 28.701 & 27.546 & 2.0896 & 1.9785 \\
+				80 & 683.74 & 615.39 & 27.665 & 25.958 & 2.2144 & 1.943 \\
+				90 & 585.04 & 554.35 & 26.387 & 23.992 & 1.9934 & 1.8787 \\
+				100 & 574.1 & 465.07 & 24.605 & 20.679 & 2.1172 & 1.768 \\
+				110 & 471.52 & 389.13 & 22.118 & 17.411 & 2.0016 & 1.461 \\
+				120 & 423.38 & 242.13 & 16.818 & 11.343 & 1.2666 & 0.92693 \\
+				130 & 45.623 & 164.16 & 1.6725 & 7.9364 & 0.093924 & 0.74326 \\
+				140 & 0.58452 & 119.33 & 0.021585 & 5.8612 & 0.0011516 & 0.59224 \\
+				150 & 0.0017614 & 82.703 & 6.5945e-05 & 4.0751 & 3.5563e-06 & 0.4282 \\
+				\hline
+		\end{tabular}}
+		\caption{Dla funkcji $sin(10x)$ na $[-4\pi, 4\pi]$. Dla funkcji o krótszym okresie (porównanie do zestawienia 4) potrzeba więcej węzłów, aby dokładnie ja przybliżyć.}
+	\end{table}
+	
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				Liczba węzłów & $\|f(x) - \text{impl}(x)\|_1$ & $\|f(x) - \text{wbud}(x)\|_1$ & $\|f(x) - \text{impl}(x)\|_2$ & $\|f(x) - \text{wbud}(x)\|_2$ & $\|f(x) - \text{impl}(x)\|_{\infty}$ & $\|f(x) - \text{wbud}(x)\|_{\infty}$ \\
+				\hline
+				10 & 262.57 & 264.31 & 14.447 & 14.695 & 1.199 & 1.2162 \\
+				20 & 237.7 & 154.58 & 10.947 & 10.195 & 1.1592 & 1.1697 \\
+				30 & 178.18 & 150.13 & 10.115 & 9.9505 & 1.3571 & 1.338 \\
+				40 & 151.93 & 109.48 & 10.669 & 10.609 & 1.8532 & 1.872 \\
+				50 & 238.73 & 141.26 & 12.918 & 11.258 & 1.6572 & 1.5173 \\
+				60 & 146.66 & 90.63 & 9.1787 & 8.945 & 1.4166 & 1.4021 \\
+				70 & 119.22 & 111.36 & 10.569 & 10.646 & 1.7792 & 1.752 \\
+				80 & 97.729 & 95.672 & 10.769 & 10.282 & 2.4072 & 2.2227 \\
+				90 & 105.05 & 72.904 & 9.2518 & 8.8886 & 1.7843 & 1.7048 \\
+				100 & 107.41 & 89.524 & 9.5161 & 9.4045 & 1.8488 & 1.8108 \\
+				\hline
+		\end{tabular}}
+		\caption{Dla funkcji $sin(\frac{1}{x})$ na $[-1, 1]$. Po pierwsze funkcja ta jest nieokreślona w punkcie $x=0$, więc nie da się jej tam przybliżyć, po drugie oscyluje nieskończenie wiele razy w pobliżu tego punktu, więc tak czy inaczej nie dałoby się jej dokładnie przybliżyć.}
+	\end{table}
+
+	\begin{table}[h]
+		\centering
+		\resizebox{\textwidth}{!}{
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				Liczba węzłów & $\|f(x) - \text{impl}(x)\|_1$ & $\|f(x) - \text{wbud}(x)\|_1$ & $\|f(x) - \text{impl}(x)\|_2$ & $\|f(x) - \text{wbud}(x)\|_2$ & $\|f(x) - \text{impl}(x)\|_{\infty}$ & $\|f(x) - \text{wbud}(x)\|_{\infty}$ \\
+				\hline
+				150 & 0.0016963 & 0.0017012 & 0.0014913 & 0.0015825 & 0.0014907 & 0.0015801 \\
+				200 & 0.0012094 & 0.001218 & 0.0011182 & 0.0011854 & 0.001118 & 0.0011851 \\
+				250 & 0.00094132 & 0.00095603 & 0.00089449 & 0.00094809 & 0.00089443 & 0.00094807 \\
+				\hline
+		\end{tabular}}
+		\caption{Dla funkcji $\sqrt{x}$ na $[0, 0.2]$. Mimo iż interpolujemy funkcję na krótkim przedziale i dużą liczbą węzłów, to przybliżenie nie jest najdokładniejsze. Dzieje się tak, ponieważ $\sqrt{x}$ jest nieróżniczkowalna w $x=0$.}
+	\end{table}
+	
+	\begin{table}
+		\centering
+		\begin{tabular}{|c|c|c|c|}
+			\hline
+			$x$ & $\frac{1}{x^2+1}$ & Błąd funkcji wbudowanej & Błąd funkcji zaimplementowanej \\
+			\hline
+			0 & 1 & 2.5359e-08 & 2.6912e-13 \\
+			1 & 0.5 & 8.717e-07 & 3.4472e-14 \\
+			2 & 0.2 & 6.9805e-08 & 7.1332e-15 \\
+			3 & 0.1 & 2.4466e-07 & 5.2874e-15 \\
+			4 & 0.058824 & 7.8306e-09 & 2.9837e-16 \\
+			5 & 0.038462 & 5.7468e-10 & 1.1727e-15 \\
+			6 & 0.027027 & 2.2716e-12 & 4.4201e-15 \\
+			7 & 0.02 & 8.2219e-05 & 440.44 \\
+			8 & 0.015385 & 0.0010872 & 1.7028e+09 \\
+			9 & 0.012195 & 0.0047648 & 9.1714e+13 \\
+			10 & 0.009901 & 0.01332 & 5.3277e+17 \\
+			11 & 0.0081967 & 0.029183 & 7.5052e+20 \\
+			12 & 0.0068966 & 0.054903 & 3.9039e+23 \\
+			\hline
+		\end{tabular}
+		\caption{Bardzo ciekawa obserwacja. Dla $50$ węzłów na $[0, 6]$. Zauważmy, że w przedziale, w którym znajdują się węzły funkcja zaimplementowana radzi sobie znacznie lepiej od wbudowanej. Jednak poza tym przedziałem (tutaj dla argumentów $x = 7, 8, \ldots, 12$) błąd funkcji zaimplementowanej jest ogromny, zaś funkcja wbudowana radzi sobie nienajlepiej, ale w porównaniu do naszej funkcji wypada bardzo dobrze.}
+	\end{table}
+
+\clearpage
+	
+	\section*{4. Wnioski}
+	Na podstawie przeprowadzonych eksperymentów i przytoczonych przykładów możemy wysnuć kilka obserwacji.
+	\begin{enumerate}
+		\item Interpolacja wielomianowa źle działa w pobliżu punktów nieróżniczkowalności funkcji $f$.
+		\item Wysoka oscylacja funkcji na pewnym przedziale nie sprzyja interpolacji.
+		\item Interpolacja wielomianowa dobrze sprawdza się na przedziale, na którym znajdują się węzły, poza tym przedziałem - bardzo źle. Warto wówczas rozważyć inną metodą interpolacji.
+	\end{enumerate}
+
+	\section*{5. Źródła}
+	\textit{Notatki z wykładu "Metody numeryczne" dr I. Wróbel, MiNI 2023 semestr zimowy} \\
+	\textit{Analiza Numeryczna, D. Kincaid, W. Cheney} \\
+	\textit{https://pl.wikipedia.org/wiki/Interpolacja\_wielomianowa} \\
+	
+\end{document}
